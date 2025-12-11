@@ -2,18 +2,35 @@ package com.backend.testtaskbackend.entity;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Embeddable;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-
 @Embeddable
-@Data
-@NoArgsConstructor
-@AllArgsConstructor
 public class ArrivalTime {
     @Column(name = "check_in")
     private String checkIn;
     
     @Column(name = "check_out")
     private String checkOut;
+
+    public ArrivalTime() {
+    }
+
+    public ArrivalTime(String checkIn, String checkOut) {
+        this.checkIn = checkIn;
+        this.checkOut = checkOut;
+    }
+
+    public String getCheckIn() {
+        return checkIn;
+    }
+
+    public void setCheckIn(String checkIn) {
+        this.checkIn = checkIn;
+    }
+
+    public String getCheckOut() {
+        return checkOut;
+    }
+
+    public void setCheckOut(String checkOut) {
+        this.checkOut = checkOut;
+    }
 }

@@ -2,18 +2,35 @@ package com.backend.testtaskbackend.entity;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Embeddable;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-
 @Embeddable
-@Data
-@NoArgsConstructor
-@AllArgsConstructor
 public class Contacts {
     @Column(name = "phone")
     private String phone;
     
     @Column(name = "email")
     private String email;
+
+    public Contacts() {
+    }
+
+    public Contacts(String phone, String email) {
+        this.phone = phone;
+        this.email = email;
+    }
+
+    public String getPhone() {
+        return phone;
+    }
+
+    public void setPhone(String phone) {
+        this.phone = phone;
+    }
+
+    public String getEmail() {
+        return email;
+    }
+
+    public void setEmail(String email) {
+        this.email = email;
+    }
 }
