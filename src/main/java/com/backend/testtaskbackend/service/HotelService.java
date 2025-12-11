@@ -56,8 +56,7 @@ public class HotelService {
             }
 
             if (amenities != null && !amenities.isEmpty()) {
-                // Для каждого amenity проверяем, что отель имеет его (AND логика)
-                // Используем подзапрос для корректной проверки всех amenities
+
                 for (String amenity : amenities) {
                     Subquery<Long> subquery = query.subquery(Long.class);
                     jakarta.persistence.criteria.Root<Hotel> subRoot = subquery.from(Hotel.class);
@@ -80,7 +79,6 @@ public class HotelService {
     }
 
     public HotelShortDto createHotel(Hotel hotel) {
-        // Убеждаемся, что amenities не передаются при создании (по ТЗ их нет в запросе)
         hotel.setAmenities(null);
         Hotel savedHotel = hotelRepository.save(hotel);
         return convertToShortDto(savedHotel);
@@ -93,7 +91,7 @@ public class HotelService {
         if (hotel.getAmenities() == null) {
             hotel.setAmenities(new ArrayList<>());
         }
-        // Используем LinkedHashSet для избежания дубликатов с сохранением порядка
+
         LinkedHashSet<String> uniqueAmenities = new LinkedHashSet<>(hotel.getAmenities());
         uniqueAmenities.addAll(amenities);
         hotel.setAmenities(new ArrayList<>(uniqueAmenities));
