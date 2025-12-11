@@ -32,8 +32,14 @@
             <column name="hotel_id" type="BIGINT">
                 <constraints nullable="false"/>
             </column>
-            <column name="amenity" type="VARCHAR(255)"/>
+            <column name="amenity" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
         </createTable>
+        
+        <addPrimaryKey tableName="hotel_amenities"
+                      columnNames="hotel_id, amenity"
+                      constraintName="pk_hotel_amenities"/>
 
         <addForeignKeyConstraint baseTableName="hotel_amenities"
                                  baseColumnNames="hotel_id"

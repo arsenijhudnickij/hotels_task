@@ -1,16 +1,18 @@
 package com.backend.testtaskbackend.service;
 
-import com.backend.testtaskbackend.dto.HotelShortDto;
+import com.backend.testtaskbackend.dto.*;
 import com.backend.testtaskbackend.entity.Hotel;
 import com.backend.testtaskbackend.repository.HotelRepository;
 import jakarta.persistence.criteria.Join;
 import jakarta.persistence.criteria.Predicate;
+import jakarta.persistence.criteria.Subquery;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -27,9 +29,10 @@ public class HotelService {
                 .collect(Collectors.toList());
     }
 
-    public Hotel getHotelDetails(Long id) {
-        return hotelRepository.findById(id)
+    public HotelFullDto getHotelDetails(Long id) {
+        Hotel hotel = hotelRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Hotel not found with id: " + id));
+        return convertToFullDto(hotel);
     }
 
     public List<HotelShortDto> search(String name, String brand, String city, String country, List<String> amenities) {
@@ -53,18 +56,19 @@ public class HotelService {
             }
 
             if (amenities != null && !amenities.isEmpty()) {
-                Join<Hotel, String> amenitiesJoin = root.join("amenities");
-                List<Predicate> amenitiesPredicates = new ArrayList<>();
-
+                // Для каждого amenity проверяем, что отель имеет его (AND логика)
+                // Используем подзапрос для корректной проверки всех amenities
                 for (String amenity : amenities) {
-                    amenitiesPredicates.add(
-                            cb.like(cb.lower(amenitiesJoin), "%" + amenity.toLowerCase() + "%")
-                    );
+                    Subquery<Long> subquery = query.subquery(Long.class);
+                    jakarta.persistence.criteria.Root<Hotel> subRoot = subquery.from(Hotel.class);
+                    Join<Hotel, String> amenitiesJoin = subRoot.join("amenities");
+                    subquery.select(subRoot.get("id"))
+                            .where(
+                                    cb.equal(subRoot.get("id"), root.get("id")),
+                                    cb.like(cb.lower(amenitiesJoin), "%" + amenity.toLowerCase() + "%")
+                            );
+                    predicates.add(cb.exists(subquery));
                 }
-
-                predicates.add(cb.or(amenitiesPredicates.toArray(new Predicate[0])));
-
-                query.distinct(true);
             }
 
             return cb.and(predicates.toArray(new Predicate[0]));
@@ -75,17 +79,24 @@ public class HotelService {
                 .collect(Collectors.toList());
     }
 
-    public Hotel createHotel(Hotel hotel) {
-        return hotelRepository.save(hotel);
+    public HotelShortDto createHotel(Hotel hotel) {
+        // Убеждаемся, что amenities не передаются при создании (по ТЗ их нет в запросе)
+        hotel.setAmenities(null);
+        Hotel savedHotel = hotelRepository.save(hotel);
+        return convertToShortDto(savedHotel);
     }
 
     // 5. Добавление удобств
     public void addAmenities(Long id, List<String> amenities) {
-        Hotel hotel = getHotelDetails(id);
+        Hotel hotel = hotelRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Hotel not found with id: " + id));
         if (hotel.getAmenities() == null) {
             hotel.setAmenities(new ArrayList<>());
         }
-        hotel.getAmenities().addAll(amenities);
+        // Используем LinkedHashSet для избежания дубликатов с сохранением порядка
+        LinkedHashSet<String> uniqueAmenities = new LinkedHashSet<>(hotel.getAmenities());
+        uniqueAmenities.addAll(amenities);
+        hotel.setAmenities(new ArrayList<>(uniqueAmenities));
         hotelRepository.save(hotel);
     }
 
@@ -111,12 +122,13 @@ public class HotelService {
     }
 
     private HotelShortDto convertToShortDto(Hotel hotel) {
-        String fullAddress = "";
-        if (hotel.getAddress() != null) {
+        String fullAddress = null;
+        if (hotel.getAddress() != null && hotel.getAddress().getHouseNumber() != null 
+                && hotel.getAddress().getStreet() != null && hotel.getAddress().getCity() != null) {
             fullAddress = hotel.getAddress().getHouseNumber() + " " +
                     hotel.getAddress().getStreet() + ", " +
                     hotel.getAddress().getCity() + ", " +
-                    hotel.getAddress().getPostCode() + ", " +
+                    (hotel.getAddress().getPostCode() != null ? hotel.getAddress().getPostCode() + ", " : "") +
                     hotel.getAddress().getCountry();
         }
 
@@ -128,6 +140,46 @@ public class HotelService {
                 hotel.getDescription(),
                 fullAddress,
                 phone
+        );
+    }
+
+    private HotelFullDto convertToFullDto(Hotel hotel) {
+        AddressDto addressDto = null;
+        if (hotel.getAddress() != null) {
+            addressDto = new AddressDto(
+                    hotel.getAddress().getHouseNumber(),
+                    hotel.getAddress().getStreet(),
+                    hotel.getAddress().getCity(),
+                    hotel.getAddress().getCountry(),
+                    hotel.getAddress().getPostCode()
+            );
+        }
+
+        ContactsDto contactsDto = null;
+        if (hotel.getContacts() != null) {
+            contactsDto = new ContactsDto(
+                    hotel.getContacts().getPhone(),
+                    hotel.getContacts().getEmail()
+            );
+        }
+
+        ArrivalTimeDto arrivalTimeDto = null;
+        if (hotel.getArrivalTime() != null) {
+            arrivalTimeDto = new ArrivalTimeDto(
+                    hotel.getArrivalTime().getCheckIn(),
+                    hotel.getArrivalTime().getCheckOut()
+            );
+        }
+
+        return new HotelFullDto(
+                hotel.getId(),
+                hotel.getName(),
+                hotel.getDescription(),
+                hotel.getBrand(),
+                addressDto,
+                contactsDto,
+                arrivalTimeDto,
+                hotel.getAmenities()
         );
     }
 }

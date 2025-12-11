@@ -1,11 +1,13 @@
 package com.backend.testtaskbackend.controller;
 
+import com.backend.testtaskbackend.dto.HotelFullDto;
 import com.backend.testtaskbackend.dto.HotelShortDto;
 import com.backend.testtaskbackend.entity.Hotel;
 import com.backend.testtaskbackend.service.HotelService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -26,7 +28,7 @@ public class HotelController {
 
     @Operation(summary = "Получение полной информации об отеле по ID")
     @GetMapping("/hotels/{id}")
-    public Hotel getHotelById(@PathVariable Long id) {
+    public HotelFullDto getHotelById(@PathVariable Long id) {
         return hotelService.getHotelDetails(id);
     }
 
@@ -43,12 +45,13 @@ public class HotelController {
 
     @Operation(summary = "Создание нового отеля")
     @PostMapping("/hotels")
-    public Hotel createHotel(@RequestBody Hotel hotel) {
+    public HotelShortDto createHotel(@RequestBody Hotel hotel) {
         return hotelService.createHotel(hotel);
     }
 
     @Operation(summary = "Добавление удобств (amenities) к отелю")
     @PostMapping("/hotels/{id}/amenities")
+    @ResponseStatus(HttpStatus.OK)
     public void addAmenities(@PathVariable Long id, @RequestBody List<String> amenities) {
         hotelService.addAmenities(id, amenities);
     }

@@ -27,7 +27,6 @@ class HotelControllerTest {
 
     @Test
     void shouldCreateAndGetHotel() throws Exception {
-        // 1. Создаем объект
         Hotel hotel = new Hotel();
         hotel.setName("Test Hotel");
         hotel.setBrand("Test Brand");
